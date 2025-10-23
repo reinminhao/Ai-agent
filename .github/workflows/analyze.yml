@@ -1,4 +1,4 @@
-name: Analyze AI Agent Code
+name: Analyze Real Project Code
 
 on:
   push:
@@ -19,55 +19,34 @@ jobs:
       - name: Run Docker container
         run: docker run -d --name ai-agent -p 8000:8000 ai-agent
 
-      # 生成测试示例代码文件
-      - name: Prepare sample code zip
+      - name: Prepare real repo zip
         run: |
-          mkdir -p sample
-          cat > sample/app.py << 'PY'
-# 打印信息功能与创建频道、发送消息的实现
-def create_channel(name):
-    # 建立频道
-    print("create channel:", name)
-    return {"id": 1, "name": name}
+          echo "Packing repository source code"
+          zip -r repo.zip . -x ".git/*" ".venv/*" ".github/*" "__pycache__/*" "*.pyc" ".idea/*"
+          ls -lh repo.zip
 
-def create_message(channel_id, title, content):
-    # 在频道中发送消息
-    print("create message:", channel_id, title, content)
-    return {"id": 1, "title": title, "content": content}
-
-def list_messages_desc(channel_id):
-    # 按时间倒序列出频道中的消息
-    return []
-PY
-          cd sample
-          zip -r ../sample.zip .
-
-      # 调用容器API分析代码
       - name: Call API to analyze code
         run: |
           set -e
-          echo "容器启动"
+          echo "Waiting for container to start"
           sleep 5
-          echo "调用 /analyze 接口"
+          echo "Calling /analyze endpoint for real project"
           code=$(
             curl -sS -w "%{http_code}" -o result.json \
               -X POST "http://localhost:8000/analyze" \
-              -F "problem_description=实现建立频道功能；实现在频道中传送消息功能；实现按时间倒序列出频道中的消息功能" \
-              -F "code_zip=@sample.zip"
+              -F "problem_description=建立频道；在频道中传送消息；按时间倒序列出频道中的消息；打印信息" \
+              -F "code_zip=@repo.zip"
           )
           echo "HTTP_STATUS=$code"
           test "$code" = "200"
 
-      # 输出容器日志,用于调试
       - name: Show container logs
         run: docker logs ai-agent
 
-      # 显示分析结果
       - name: Display analysis result
         run: cat result.json
 
-      # 上传JSON结果到Actions artifacts
-      - name: Upload result.json
+      - name: Upload analysis result
         uses: actions/upload-artifact@v4
         with:
           name: analyze-result
