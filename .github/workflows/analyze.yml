@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          TARGET_DIR="test_repo"   
+          TARGET_DIR="../"   
           test -d "$TARGET_DIR"
           cd "$TARGET_DIR"
           zip -r ../repo.zip . -x ".git/*" "__pycache__/*" "*.pyc" ".venv/*" ".idea/*" ".github/*"
