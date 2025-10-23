@@ -19,18 +19,36 @@ jobs:
       - name: Run Docker container
         run: docker run -d --name ai-agent -p 8010:8010 ai-agent
 
-      - name: Prepare real repo zip
+      - name: Wait for service readiness
+        shell: bash
         run: |
-          echo "Packing repository source code"
-          zip -r repo.zip . -x ".git/*" ".venv/*" ".github/*" "__pycache__/*" "*.pyc" ".idea/*"
+          set -e
+          for i in {1..30}; do
+            if curl -sS http://localhost:8010/ -o /dev/null; then
+              echo "Service is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Service not ready in time"
+          docker logs ai-agent || true
+          exit 1
+
+      - name: Prepare real repo zip (subdirectory)
+        shell: bash
+        run: |
+          set -e
+          TARGET_DIR="test_repo"   
+          test -d "$TARGET_DIR"
+          cd "$TARGET_DIR"
+          zip -r ../repo.zip . -x ".git/*" "__pycache__/*" "*.pyc" ".venv/*" ".idea/*" ".github/*"
+          cd ..
           ls -lh repo.zip
 
       - name: Call API to analyze code
+        shell: bash
         run: |
           set -e
-          echo "Waiting for container to start"
-          sleep 5
-          echo "Calling /analyze endpoint for real project"
           code=$(
             curl -sS -w "%{http_code}" -o result.json \
               -X POST "http://localhost:8010/analyze" \
@@ -40,13 +58,16 @@ jobs:
           echo "HTTP_STATUS=$code"
           test "$code" = "200"
 
-      - name: Show container logs
+      - name: Show container logs (always)
+        if: always()
         run: docker logs ai-agent
 
-      - name: Display analysis result
-        run: cat result.json
+      - name: Display analysis result (always)
+        if: always()
+        run: cat result.json || true
 
-      - name: Upload analysis result
+      - name: Upload analysis result (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: analyze-result
