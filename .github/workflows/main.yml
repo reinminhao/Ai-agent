@@ -1,0 +1,35 @@
+name: Analyze Code
+
+on: 
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: docker build -t ai-agent .
+
+      - name: Run Docker container
+        run: docker run -d --name ai-agent -p 8000:8000 ai-agent
+
+      - name: Prepare sample code zip
+        run: |
+          mkdir -p sample && echo "print('hi')" > sample/app.py
+          cd sample && zip -r ../sample.zip .
+
+      - name: Call API to analyze code
+        run: |
+          sleep 2
+          curl -X POST "http://localhost:8000/analyze" \
+            -F "problem_description=打印信息功能" \
+            -F "code_zip=@sample.zip" | tee result.json
+
+      - name: Display analysis result
+        run: cat result.json
