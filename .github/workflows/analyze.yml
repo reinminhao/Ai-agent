@@ -17,7 +17,7 @@ jobs:
         run: docker build -t ai-agent .
 
       - name: Run Docker container
-        run: docker run -d --name ai-agent -p 8000:8000 ai-agent
+        run: docker run -d --name ai-agent -p 8010:8010 ai-agent
 
       - name: Prepare real repo zip
         run: |
@@ -33,7 +33,7 @@ jobs:
           echo "Calling /analyze endpoint for real project"
           code=$(
             curl -sS -w "%{http_code}" -o result.json \
-              -X POST "http://localhost:8000/analyze" \
+              -X POST "http://localhost:8010/analyze" \
               -F "problem_description=建立频道；在频道中传送消息；按时间倒序列出频道中的消息；打印信息" \
               -F "code_zip=@repo.zip"
           )
