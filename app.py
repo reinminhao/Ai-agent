@@ -72,8 +72,10 @@ def analyze():
             bar.update(1)
 
             # 分析
-            feature_analysis = analyze_repository(problem_description, extract_dir, on_progress=lambda _: bar.update(1))
+            feature_analysis, plan = analyze_repository(problem_description, extract_dir,
+                                                        on_progress=lambda _: bar.update(1))
             report["feature_analysis"] = feature_analysis
+            report["execution_plan_suggestion"] = plan
 
             # 若启用, 进行可选动态验证
             if run_verification:
@@ -92,4 +94,4 @@ def analyze():
             gc.collect()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8010)
